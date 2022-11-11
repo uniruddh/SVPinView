@@ -452,6 +452,6 @@ extension SVPinView : UITextFieldDelegate
             // so the oldest digit is removed in textFieldDidChange: to ensure single character entry
             textField.selectedTextRange = textField.textRange(from: cursorLocation, to: textField.beginningOfDocument)
         }
-        return true
+        return string == string.filter("0123456789".contains)
     }
 }
