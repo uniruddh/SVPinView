@@ -129,15 +129,6 @@ public class SVPinView: UIView {
             return
         }
         
-        // ensure single character in text box and trim spaces
-        if textField.text?.count ?? 0 > 1 {
-            textField.text?.removeFirst()
-            textField.text = { () -> String in
-                let text = textField.text ?? ""
-                return String(text[..<text.index((text.startIndex), offsetBy: 1)])
-            }()
-        }
-        
         let isBackSpace = { () -> Bool in
             guard let char = textField.text?.cString(using: String.Encoding.utf8) else { return false }
             return strcmp(char, "\\b") == -92
@@ -150,7 +141,7 @@ public class SVPinView: UIView {
         // if entered text is a backspace - do nothing; else - move to next field
         // backspace logic handled in SVPinField
         nextTag = isBackSpace() ? textField.tag : textField.tag + 1
-        
+
         // Try to find next responder
         if let nextResponder = textField.superview?.superview?.superview?.superview?.viewWithTag(nextTag) as UIResponder? {
             // Found next responder, so set it.
@@ -162,7 +153,34 @@ public class SVPinView: UIView {
             } else if index > 1 { textField.resignFirstResponder() }
         }
         
-        // activate the placeholder if textField empty
+        
+        if textField.text?.count ?? 0 > 1 {
+            let newtext = textField.text?.last
+            
+            if let nextResponder = textField.superview?.superview?.superview?.superview?.viewWithTag(nextTag) as UIResponder?, let txt = nextResponder as? SVPinField {
+                // Found next responder, so set it.
+                if txt.text?.count ?? 0 == 0 {
+                    txt.text = "\(newtext!)"
+                    let i = txt.tag
+                    let last = i % 10
+                    password[last - 1] = "\(newtext!)"
+                    if txt.tag == 104 && txt.text != "" {
+                        nextResponder.resignFirstResponder()
+                    }
+                    guard let newplaceholderLabel = txt.superview?.viewWithTag(400) as? UILabel else {
+                        self.showPinError(error: "ERR-101: Type Mismatch")
+                        return
+                    }
+                    newplaceholderLabel.isHidden = !(txt.text?.isEmpty ?? true)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(secureTextDelay), execute: {
+                        
+                        newplaceholderLabel.isHidden = true
+                        if self.shouldSecureText { txt.text = self.secureCharacter }
+                    })
+                }
+            }
+        }
+        
         placeholderLabel.isHidden = !(textField.text?.isEmpty ?? true)
         
         // secure text after a bit
@@ -174,7 +192,20 @@ public class SVPinView: UIView {
         })
         
         // store text
-        let text =  textField.text ?? ""
+        
+        var text = textField.text ?? ""
+        if textField.text?.count ?? 0 > 1 {
+            textField.text?.removeLast()
+        
+            textField.text = { () -> String in
+                let text = textField.text ?? ""
+                return String(text[..<text.index((text.startIndex), offsetBy: 1)])
+            }()
+            
+            let i = textField.tag
+            let last = i % 10
+            text = self.password[last - 1]
+        }
         let passwordIndex = index - 1
         if password.count > (passwordIndex) {
             // delete if space
@@ -182,6 +213,7 @@ public class SVPinView: UIView {
         } else {
             password.append(text)
         }
+        
         validateAndSendCallback()
     }
     
@@ -452,6 +484,7 @@ extension SVPinView : UITextFieldDelegate
             // so the oldest digit is removed in textFieldDidChange: to ensure single character entry
             textField.selectedTextRange = textField.textRange(from: cursorLocation, to: textField.beginningOfDocument)
         }
+        
         return string == string.filter("0123456789".contains)
     }
 }
