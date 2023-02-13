@@ -163,7 +163,15 @@ public class SVPinView: UIView {
                     txt.text = "\(newtext!)"
                     let i = txt.tag
                     let last = i % 10
-                    password[last - 1] = "\(newtext!)"
+                    let passwordIndex = last - 1
+                    if password.count > (passwordIndex) {
+                        // delete if space
+                        password[passwordIndex] = "\(newtext!)"
+                    } else {
+                        password.append("\(newtext!)")
+                    }
+                    
+//                    password[last - 1] = "\(newtext!)"
                     if txt.tag == 104 && txt.text != "" {
                         nextResponder.resignFirstResponder()
                     }
@@ -204,7 +212,11 @@ public class SVPinView: UIView {
             
             let i = textField.tag
             let last = i % 10
-            text = self.password[last - 1]
+            let passwordIndex = last - 1
+            if password.count > (passwordIndex) {
+                text = self.password[passwordIndex]
+            }
+            
         }
         let passwordIndex = index - 1
         if password.count > (passwordIndex) {
@@ -349,6 +361,10 @@ public class SVPinView: UIView {
 extension SVPinView : UICollectionViewDataSource, UICollectionViewDelegate, UICollectionViewDelegateFlowLayout
 {
     public func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+        password = []
+        for _ in 0..<pinLength {
+            password.append("")
+        }
         return pinLength
     }
     
